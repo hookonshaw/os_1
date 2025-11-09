@@ -1,0 +1,88 @@
+\section{Метод решения}
+
+Программа реализует многопроцессную архитектуру для выполнения последовательных делений чисел с обработкой ошибок. Основной алгоритм:
+
+\subsection*{Архитектура программы}
+\begin{itemize}
+    \item \textbf{Родительский процесс} (division\_parent.cpp): отвечает за взаимодействие с пользователем, ввод данных и управление дочерним процессом
+    \item \textbf{Дочерний процесс} (division\_child.cpp): выполняет математические операции и записывает результаты в файл
+    \item \textbf{Общая библиотека} (division\_os.h/cpp): содержит вспомогательные функции для работы с процессами и pipes
+\end{itemize}
+
+\subsection*{Алгоритм работы}
+\begin{enumerate}
+    \item Родительский процесс создает два pipe-канала для двусторонней связи
+    \item Создается дочерний процесс с перенаправлением стандартных потоков ввода/вывода
+    \item Пользователь вводит имя файла для результатов и последовательности чисел
+    \item Данные передаются через pipe в дочерний процесс
+    \item Дочерний процесс выполняет деление и проверяет на нулевой делитель
+    \item При обнаружении деления на ноль отправляется сигнал для завершения обоих процессов
+    \item Результаты операций записываются в указанный файл
+\end{enumerate}
+
+\subsection*{Обработка ошибок}
+Программа использует механизм сигналов (SIGUSR1) для уведомления родительского процесса об ошибке деления на ноль. Это обеспечивает корректное завершение обоих процессов при возникновении критической ошибки.
+
+\subsection*{Использованные источники}
+\begin{itemize}
+    \item Stevens W.R., Rago S.A. - Advanced Programming in the UNIX Environment
+    \item Документация Linux man pages: pipe(2), fork(2), dup2(2), signal(7)
+\end{itemize}
+
+\section{Описание программы}
+
+\subsection*{Структура файлов}
+\begin{itemize}
+    \item \textbf{division\_os.h} - заголовочный файл с объявлениями функций и типов
+    \item \textbf{division\_os.cpp} - реализация системных функций-оберток
+    \item \textbf{division\_parent.cpp} - основной родительский процесс
+    \item \textbf{division\_child.cpp} - дочерний процесс для вычислений
+\end{itemize}
+
+\subsection*{Основные типы данных}
+\begin{itemize}
+    \item \texttt{ProcessRole} - перечисление для идентификации роли процесса
+    \item \texttt{volatile sig\_atomic\_t} - атомарный тип для обработки сигналов
+\end{itemize}
+
+\subsection*{Ключевые функции}
+
+\subsubsection*{division\_os.h/cpp}
+\begin{itemize}
+    \item \texttt{ProcessCreate()} - создание дочернего процесса с помощью \texttt{fork()}
+    \item \texttt{pipeCreate()} - создание pipe с обработкой ошибок
+    \item \texttt{pipeRead()/pipeWrite()} - чтение/запись в pipe
+    \item \texttt{redirectFd()} - перенаправление файловых дескрипторов с помощью \texttt{dup2()}
+\end{itemize}
+
+\subsubsection*{division\_parent.cpp}
+\begin{itemize}
+    \item \texttt{handle\_signal()} - обработчик сигнала деления на ноль
+    \item Основная логика взаимодействия с пользователем и управления дочерним процессом
+\end{itemize}
+
+\subsubsection*{division\_child.cpp}
+\begin{itemize}
+    \item \texttt{handle\_division\_signal()} - обработчик сигнала
+    \item Основная логика вычислений и записи в файл
+\end{itemize}
+
+\subsection*{Используемые системные вызовы}
+\begin{itemize}
+    \item \textbf{fork()} - создание нового процесса
+    \item \textbf{pipe()} - создание канала межпроцессного взаимодействия
+    \item \textbf{dup2()} - перенаправление файловых дескрипторов
+    \item \textbf{read()/write()} - операции ввода/вывода
+    \item \textbf{close()} - закрытие файловых дескрипторов
+    \item \textbf{signal()} - установка обработчиков сигналов
+    \item \textbf{execl()} - запуск исполняемого файла
+    \item \textbf{wait()} - ожидание завершения дочернего процесса
+\end{itemize}
+
+\subsection*{Протокол взаимодействия}
+\begin{enumerate}
+    \item Родитель передает имя файла в дочерний процесс
+    \item Для каждой операции: родитель отправляет количество чисел и массив значений
+    \item Дочерний процесс выполняет вычисления и отправляет статус операции
+    \item При ошибке деления на ноль процессы завершаются
+\end{enumerate}
